@@ -1,0 +1,24 @@
+flowchart LR
+    U[User Query] --> C[CLI]
+    C --> G1[Guardrails<br/>length / disallowed terms]
+    G1 -->|refused| O1[Refusal Response]
+    G1 -->|ok| P[Planner<br/>intent + slots]
+    P --> R1[KB Retriever<br/>TF-IDF over markdown]
+    P --> R2[Catalog Search<br/>filter + score tracks]
+    R1 --> D[Recommender<br/>LLM or fallback]
+    R2 --> D
+    D --> K[Checker<br/>grounding + slot satisfaction]
+    K -->|fail| V[Reviser<br/>broaden filters / regenerate]
+    V --> K
+    K -->|pass| O2[Recommendations + Summary + Citations]
+
+    P --> L[(Trace Logs<br/>logs/agent_trace.jsonl)]
+    R1 --> L
+    R2 --> L
+    D --> L
+    K --> L
+    V --> L
+
+    T[Eval Harness<br/>eval/run_eval.py] --> C
+    H[Human Reviewer] --> T
+    T --> M[Metrics Report<br/>eval/last_report.json]

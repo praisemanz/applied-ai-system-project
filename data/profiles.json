@@ -1,0 +1,47 @@
+{
+  "lofi_studier": {
+    "name": "Late-Night Lo-fi Studier",
+    "description": "Studies after midnight, wants steady low-energy instrumentals with no lyrical distractions.",
+    "favorite_genres": ["Lo-fi Hip Hop", "Ambient"],
+    "favorite_moods": ["focus", "calm", "reflective"],
+    "favorite_artists": [],
+    "target_energy": 0.25,
+    "target_valence": 0.45,
+    "target_danceability": 0.35,
+    "target_acousticness": 0.55,
+    "target_instrumentalness": 0.85,
+    "tempo_range": [60, 100],
+    "decades": [],
+    "min_popularity": 0
+  },
+  "cardio_edm_runner": {
+    "name": "Cardio EDM Runner",
+    "description": "Runs intervals; needs a relentless, danceable, high-tempo set with no slow tracks.",
+    "favorite_genres": ["House", "Pop Punk"],
+    "favorite_moods": ["energetic", "party"],
+    "favorite_artists": [],
+    "target_energy": 0.88,
+    "target_valence": 0.75,
+    "target_danceability": 0.85,
+    "target_acousticness": 0.05,
+    "target_instrumentalness": null,
+    "tempo_range": [115, 180],
+    "decades": [],
+    "min_popularity": 60
+  },
+  "acoustic_indie_coffee": {
+    "name": "Acoustic Indie Coffee Shop",
+    "description": "Sunday-morning coffee mood: warm acoustic textures, intimate vocals, mellow tempos.",
+    "favorite_genres": ["Indie Folk", "Bossa Nova", "Neo-Soul"],
+    "favorite_moods": ["calm", "romantic", "reflective"],
+    "favorite_artists": [],
+    "target_energy": 0.40,
+    "target_valence": 0.60,
+    "target_danceability": 0.50,
+    "target_acousticness": 0.75,
+    "target_instrumentalness": null,
+    "tempo_range": [70, 130],
+    "decades": [],
+    "min_popularity": 0
+  }
+}
