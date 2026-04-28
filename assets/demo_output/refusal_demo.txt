@@ -1,0 +1,13 @@
+Intent: refusal    |    Mode: mood_first
+
+Recommendations:
+  (none — try a broader mood, genre, or artist)
+
+Summary:
+I can only recommend music from the local catalog and explain it with the curated knowledge base.
+
+Citations:
+
+Confidence: 0.1
+Checks passed: True
+Checker notes: refused_out_of_scope

@@ -1,0 +1,17 @@
+Profile: Late-Night Lo-fi Studier
+Description: Studies after midnight, wants steady low-energy instrumentals with no lyrical distractions.
+Ranking mode: genre_first
+Artist penalty: 0.5
+
+|   # | Title                  | Artist      | Genre         |   BPM |   Energy |   Score | Why                                            |
+|-----|------------------------|-------------|---------------|-------|----------|---------|------------------------------------------------|
+|   1 | Aruarian Dance         | Nujabes     | Lo-fi Hip Hop |    86 |     0.32 |   7.815 | genre match: Lo-fi Hip Hop; mood match: focus, |
+|     |                        |             |               |       |          |         | calm, reflective; tempo 86 BPM in range        |
+|   2 | An Ending (Ascent)     | Brian Eno   | Ambient       |    60 |     0.1  |   7.581 | genre match: Ambient; mood match: focus, calm, |
+|     |                        |             |               |       |          |         | reflective; tempo 60 BPM in range              |
+|   3 | Snow                   | Tomppabeats | Lo-fi Hip Hop |    78 |     0.28 |   7.099 | genre match: Lo-fi Hip Hop; mood match: focus, |
+|     |                        |             |               |       |          |         | calm; tempo 78 BPM in range                    |
+|   4 | Avril 14th             | Aphex Twin  | Ambient       |    64 |     0.12 |   6.762 | genre match: Ambient; mood match: calm,        |
+|     |                        |             |               |       |          |         | reflective; tempo 64 BPM in range              |
+|   5 | Music for Airports 1/1 | Brian Eno   | Ambient       |    55 |     0.08 |   6.336 | genre match: Ambient; mood match: focus, calm, |
+|     |                        |             |               |       |          |         | reflective; artist diversity penalty x1        |

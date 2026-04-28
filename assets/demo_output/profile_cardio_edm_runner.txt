@@ -1,0 +1,18 @@
+Profile: Cardio EDM Runner
+Description: Runs intervals; needs a relentless, danceable, high-tempo set with no slow tracks.
+Ranking mode: mood_first
+Artist penalty: 0.5
+
+|   # | Title                   | Artist       | Genre    |   BPM |   Energy |   Score | Why                                                |
+|-----|-------------------------|--------------|----------|-------|----------|---------|----------------------------------------------------|
+|   1 | D.A.N.C.E.              | Justice      | House    |   118 |     0.84 |   8.488 | mood match: energetic, party; genre match: House;  |
+|     |                         |              |          |       |          |         | tempo 118 BPM in range; popularity 78 >= min       |
+|   2 | One More Time           | Daft Punk    | House    |   123 |     0.88 |   8.47  | mood match: energetic, party; genre match: House;  |
+|     |                         |              |          |       |          |         | tempo 123 BPM in range; popularity 92 >= min       |
+|   3 | Dear Maria, Count Me In | All Time Low | Pop Punk |   168 |     0.86 |   8.382 | mood match: energetic, party; genre match: Pop     |
+|     |                         |              |          |       |          |         | Punk; tempo 168 BPM in range; popularity 82 >= min |
+|   4 | Misery Business         | Paramore     | Pop Punk |   174 |     0.92 |   8.262 | mood match: energetic, party; genre match: Pop     |
+|     |                         |              |          |       |          |         | Punk; tempo 174 BPM in range; popularity 88 >= min |
+|   5 | Around the World        | Daft Punk    | House    |   121 |     0.85 |   7.942 | mood match: energetic, party; genre match: House;  |
+|     |                         |              |          |       |          |         | tempo 121 BPM in range; popularity 88 >= min;      |
+|     |                         |              |          |       |          |         | artist diversity penalty x1                        |

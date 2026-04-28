@@ -1,0 +1,17 @@
+Profile: Acoustic Indie Coffee Shop
+Description: Sunday-morning coffee mood: warm acoustic textures, intimate vocals, mellow tempos.
+Ranking mode: mood_first
+Artist penalty: 0.5
+
+|   # | Title                 | Artist               | Genre      |   BPM |   Energy |   Score | Why                                                |
+|-----|-----------------------|----------------------|------------|-------|----------|---------|----------------------------------------------------|
+|   1 | Coffee                | Beabadoobee          | Indie Folk |    92 |     0.35 |   9.552 | mood match: calm, romantic, reflective; genre      |
+|     |                       |                      |            |       |          |         | match: Indie Folk; tempo 92 BPM in range           |
+|   2 | Desafinado            | Antonio Carlos Jobim | Bossa Nova |   128 |     0.4  |   7.994 | mood match: calm, romantic; genre match: Bossa     |
+|     |                       |                      |            |       |          |         | Nova; tempo 128 BPM in range                       |
+|   3 | The Girl from Ipanema | Joao Gilberto        | Bossa Nova |   124 |     0.35 |   7.918 | mood match: calm, romantic; genre match: Bossa     |
+|     |                       |                      |            |       |          |         | Nova; tempo 124 BPM in range                       |
+|   4 | Nakamarra             | Hiatus Kaiyote       | Neo-Soul   |    88 |     0.48 |   7.784 | mood match: calm, romantic; genre match: Neo-Soul; |
+|     |                       |                      |            |       |          |         | tempo 88 BPM in range                              |
+|   5 | Skinny Love           | Bon Iver             | Indie Folk |   116 |     0.42 |   7.778 | mood match: romantic, reflective; genre match:     |
+|     |                       |                      |            |       |          |         | Indie Folk; tempo 116 BPM in range                 |

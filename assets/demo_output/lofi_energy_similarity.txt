@@ -1,0 +1,17 @@
+Profile: Late-Night Lo-fi Studier
+Description: Studies after midnight, wants steady low-energy instrumentals with no lyrical distractions.
+Ranking mode: energy_similarity
+Artist penalty: 0.5
+
+|   # | Title          | Artist      | Genre         |   BPM |   Energy |   Score | Why                                              |
+|-----|----------------|-------------|---------------|-------|----------|---------|--------------------------------------------------|
+|   1 | Snow           | Tomppabeats | Lo-fi Hip Hop |    78 |     0.28 |   5.136 | energy fit 0.97 (target 0.25); valence fit 0.95; |
+|     |                |             |               |       |          |         | danceability fit 0.97; tempo 78 BPM in range     |
+|   2 | Aruarian Dance | Nujabes     | Lo-fi Hip Hop |    86 |     0.32 |   5.034 | energy fit 0.93 (target 0.25); valence fit 1.0;  |
+|     |                |             |               |       |          |         | danceability fit 0.93; tempo 86 BPM in range     |
+|   3 | Holocene       | Bon Iver    | Indie Folk    |    76 |     0.3  |   4.956 | energy fit 0.95 (target 0.25); valence fit 0.83; |
+|     |                |             |               |       |          |         | danceability fit 0.97; tempo 76 BPM in range     |
+|   4 | Coffee         | Beabadoobee | Indie Folk    |    92 |     0.35 |   4.844 | energy fit 0.9 (target 0.25); valence fit 0.9;   |
+|     |                |             |               |       |          |         | danceability fit 0.93; tempo 92 BPM in range     |
+|   5 | Avril 14th     | Aphex Twin  | Ambient       |    64 |     0.12 |   4.624 | energy fit 0.87 (target 0.25); valence fit 0.85; |
+|     |                |             |               |       |          |         | danceability fit 0.83; tempo 64 BPM in range     |
