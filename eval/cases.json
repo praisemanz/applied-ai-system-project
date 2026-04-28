@@ -1,20 +1,32 @@
 [
-  {
-    "name": "pricing_question",
-    "question": "What does the Growth plan cost and what does it include?",
-    "must_include_any": ["$79", "25 active workflows", "role-based permissions"],
-    "must_have_citation": true
-  },
-  {
-    "name": "security_question",
-    "question": "How does AcmeFlow protect customer data?",
-    "must_include_any": ["TLS", "AES-256", "SOC 2"],
-    "must_have_citation": true
-  },
-  {
-    "name": "integration_question",
-    "question": "Does AcmeFlow have an API and what are the limits?",
-    "must_include_any": ["REST API", "webhooks", "120 requests"],
-    "must_have_citation": true
-  }
+    {
+        "name": "pricing_question",
+        "question": "What does the Growth plan cost and what does it include?",
+        "must_include_any": [
+            "$79",
+            "25 active workflows",
+            "role-based permissions"
+        ],
+        "must_have_citation": true
+    },
+    {
+        "name": "security_question",
+        "question": "How does AcmeFlow protect customer data?",
+        "must_include_any": [
+            "TLS",
+            "AES-256",
+            "SOC 2"
+        ],
+        "must_have_citation": true
+    },
+    {
+        "name": "integration_question",
+        "question": "Does AcmeFlow have an API and what are the limits?",
+        "must_include_any": [
+            "REST API",
+            "webhooks",
+            "120 requests"
+        ],
+        "must_have_citation": true
+    }
 ]
