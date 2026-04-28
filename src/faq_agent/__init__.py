@@ -1,1 +1,0 @@
-"""Agentic FAQ assistant package."""
