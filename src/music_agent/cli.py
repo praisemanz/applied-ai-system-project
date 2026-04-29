@@ -11,7 +11,12 @@ from .config import get_settings
 from .logging_utils import configure_logging, log_trace
 from .profiles import load_profiles
 from .scoring import ALL_MODES, ScoredSong, recommend_songs
-from .track_catalog import TrackCatalog
+from .specialization import (
+    ALL_STYLES,
+    render_styled_fallback,
+    style_compliance,
+)
+from .track_catalog import RankedTrack, TrackCatalog
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -52,6 +57,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--profiles-path", type=str, default="data/profiles.json",
         help="Path to the user profiles JSON",
     )
+    parser.add_argument(
+        "--style",
+        type=str,
+        default="default",
+        choices=list(ALL_STYLES),
+        help="Summary style: default | dj_brief | studio_notes (specialization stretch)",
+    )
     parser.add_argument("--table", action="store_true", help="Render results as a table")
     parser.add_argument("--json", action="store_true", help="Output JSON instead of text")
     return parser
@@ -90,29 +102,79 @@ def run_profile_mode(args: argparse.Namespace, settings) -> None:
         artist_penalty=args.artist_penalty,
     )
 
+    styled_summary = _styled_profile_summary(scored, prefs, args.style)
+    style_metrics = (
+        style_compliance(styled_summary, args.style)
+        if args.style != "default" and scored
+        else {}
+    )
+
     log_trace(
         "profile_recommend",
         {
             "profile": prefs.name,
             "mode": args.mode,
+            "style": args.style,
+            "style_metrics": style_metrics,
             "artist_penalty": args.artist_penalty,
             "track_ids": [s.track.id for s in scored],
         },
     )
 
     if args.json:
-        print(json.dumps(_scored_to_dicts(scored), indent=2))
+        payload = {
+            "profile": prefs.name,
+            "style": args.style,
+            "style_metrics": style_metrics,
+            "summary": styled_summary,
+            "tracks": _scored_to_dicts(scored),
+        }
+        print(json.dumps(payload, indent=2))
         return
 
     print(f"Profile: {prefs.name}")
     print(f"Description: {prefs.description}")
-    print(f"Ranking mode: {args.mode}")
+    print(f"Ranking mode: {args.mode}    |    Style: {args.style}")
     print(f"Artist penalty: {args.artist_penalty}\n")
 
     if args.table:
         print(_render_table(scored))
     else:
         _render_list(scored)
+
+    if args.style != "default" and scored:
+        print("\nStyled summary:")
+        print(styled_summary)
+        m = style_metrics
+        print(
+            f"\nStyle metrics: words={m.get('word_count')}, "
+            f"second_person={m.get('has_second_person')}, "
+            f"bullets={m.get('has_bullets')}, "
+            f"compliant={m.get('compliant')}"
+        )
+
+
+def _styled_profile_summary(scored: list[ScoredSong], prefs, style: str) -> str:
+    if not scored or style == "default":
+        return ""
+    from .planner import Plan
+    plan = Plan(
+        intent="profile",
+        moods=tuple(prefs.favorite_moods),
+        genres=tuple(prefs.favorite_genres),
+        artists=tuple(prefs.favorite_artists),
+        eras=(),
+        tempo_range=prefs.tempo_range,
+        target_energy=prefs.target_energy,
+        target_valence=prefs.target_valence,
+        target_acousticness=prefs.target_acousticness,
+        success_criteria=(),
+        raw_query=prefs.description,
+    )
+    ranked = [
+        RankedTrack(track=s.track, score=s.score, reasons=s.reasons) for s in scored
+    ]
+    return render_styled_fallback(style, plan, [], ranked)
 
 
 def run_query_mode(args: argparse.Namespace, settings) -> None:
@@ -121,7 +183,12 @@ def run_query_mode(args: argparse.Namespace, settings) -> None:
         docs_path=Path(args.docs_path),
         catalog_path=Path(args.catalog_path),
     )
-    response = agent.recommend(args.query, mode=args.mode, artist_penalty=args.artist_penalty)
+    response = agent.recommend(
+        args.query,
+        mode=args.mode,
+        artist_penalty=args.artist_penalty,
+        style=args.style,
+    )
 
     log_trace(
         "final_response",
@@ -129,6 +196,8 @@ def run_query_mode(args: argparse.Namespace, settings) -> None:
             "query": args.query,
             "intent": response.intent,
             "mode": args.mode,
+            "style": response.style,
+            "style_metrics": response.style_metrics,
             "confidence": response.confidence,
             "passed_checks": response.passed_checks,
             "track_ids": [r.track_id for r in response.recommendations],
@@ -143,6 +212,8 @@ def run_query_mode(args: argparse.Namespace, settings) -> None:
                     "summary": response.summary,
                     "intent": response.intent,
                     "mode": args.mode,
+                    "style": response.style,
+                    "style_metrics": response.style_metrics,
                     "recommendations": [r.__dict__ for r in response.recommendations],
                     "citations": response.citations,
                     "confidence": response.confidence,
@@ -155,7 +226,7 @@ def run_query_mode(args: argparse.Namespace, settings) -> None:
         )
         return
 
-    print(f"Intent: {response.intent}    |    Mode: {args.mode}")
+    print(f"Intent: {response.intent}    |    Mode: {args.mode}    |    Style: {response.style}")
     if args.table and response.recommendations:
         rows = [
             [r.title, r.artist, r.genre, r.score, r.why]
@@ -187,6 +258,14 @@ def run_query_mode(args: argparse.Namespace, settings) -> None:
     print(f"Checks passed: {response.passed_checks}")
     if response.checker_reasons:
         print(f"Checker notes: {', '.join(response.checker_reasons)}")
+    if response.style != "default" and response.style_metrics:
+        m = response.style_metrics
+        print(
+            f"Style metrics: words={m.get('word_count')}, "
+            f"second_person={m.get('has_second_person')}, "
+            f"bullets={m.get('has_bullets')}, "
+            f"compliant={m.get('compliant')}"
+        )
 
 
 def _render_table(scored: list[ScoredSong]) -> str:

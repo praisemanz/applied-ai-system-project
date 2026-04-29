@@ -12,6 +12,12 @@ from .llm_client import LLMClient, Message
 from .logging_utils import log_trace
 from .planner import Plan, build_plan
 from .scoring import RankingMode, UserPreferences, recommend_songs
+from .specialization import (
+    SummaryStyle,
+    build_few_shot_prompt,
+    render_styled_fallback,
+    style_compliance,
+)
 from .track_catalog import RankedTrack, Track, TrackCatalog, TrackQuery
 
 
@@ -51,6 +57,8 @@ class AgentResponse:
     checker_reasons: list[str]
     intent: str
     refused: bool = False
+    style: str = "default"
+    style_metrics: dict[str, object] = field(default_factory=dict)
 
 
 class MusicRecommenderAgent:
@@ -66,6 +74,7 @@ class MusicRecommenderAgent:
         query: str,
         mode: RankingMode = "mood_first",
         artist_penalty: float = 0.5,
+        style: SummaryStyle = "default",
     ) -> AgentResponse:
         query = query.strip()
         if not query:
@@ -86,6 +95,8 @@ class MusicRecommenderAgent:
                 checker_reasons=["refused_out_of_scope"],
                 intent="refusal",
                 refused=True,
+                style=style,
+                style_metrics={},
             )
 
         plan = build_plan(query, self.catalog)
@@ -107,20 +118,24 @@ class MusicRecommenderAgent:
         if not ranked:
             ranked, plan = self._broaden_and_retry(plan, mode, artist_penalty)
 
-        summary = self._draft_summary(query, plan, kb_chunks, ranked)
-        log_trace("draft", {"summary_preview": summary[:400]})
+        summary = self._draft_summary(query, plan, kb_chunks, ranked, style=style)
+        log_trace("draft", {"summary_preview": summary[:400], "style": style})
 
         recommendations = [self._to_recommendation(r) for r in ranked]
-        check = self._check(plan, ranked, summary, kb_chunks)
-        log_trace("check", asdict(check))
+        check = self._check(plan, ranked, summary, kb_chunks, style=style)
+        log_trace("check", {**asdict(check), "style": style})
 
         if not check.passed and ranked:
-            summary = self._revise_summary(query, plan, kb_chunks, ranked, check.reasons)
-            log_trace("revise", {"summary_preview": summary[:400], "reasons": list(check.reasons)})
-            check = self._check(plan, ranked, summary, kb_chunks)
-            log_trace("recheck", asdict(check))
+            summary = self._revise_summary(query, plan, kb_chunks, ranked, check.reasons, style=style)
+            log_trace(
+                "revise",
+                {"summary_preview": summary[:400], "reasons": list(check.reasons), "style": style},
+            )
+            check = self._check(plan, ranked, summary, kb_chunks, style=style)
+            log_trace("recheck", {**asdict(check), "style": style})
 
         citations = self._build_citations(kb_chunks, ranked)
+        metrics = style_compliance(summary, style) if ranked else {}
 
         return AgentResponse(
             summary=summary,
@@ -130,6 +145,8 @@ class MusicRecommenderAgent:
             passed_checks=check.passed,
             checker_reasons=list(check.reasons),
             intent=plan.intent,
+            style=style,
+            style_metrics=metrics,
         )
 
     def _rank_with_mode(
@@ -196,46 +213,19 @@ class MusicRecommenderAgent:
         plan: Plan,
         kb_chunks: list[RetrievedChunk],
         ranked: list[RankedTrack],
+        style: SummaryStyle = "default",
     ) -> str:
         if not ranked:
             return (
-                "I could not find tracks in the catalog that match this request. "
+                "Could not find tracks in the catalog that match this request. "
                 "Try a broader mood (focus, party, romantic) or a specific genre or artist."
             )
 
-        evidence_block = "\n\n".join(
-            f"[{c.source}#{c.chunk_id}] {c.text}" for c in kb_chunks
-        ) or "(no knowledge-base context retrieved)"
-
-        track_block = "\n".join(
-            f"- {r.track.title} by {r.track.artist} "
-            f"[{r.track.genre}, {r.track.tempo_bpm} BPM, energy {r.track.energy}, "
-            f"valence {r.track.valence}]"
-            for r in ranked
-        )
-
         if not self.llm.has_live_model:
-            mood_text = ", ".join(plan.moods) if plan.moods else "your request"
-            return (
-                f"For {mood_text}, the catalog suggests:\n{track_block}\n\n"
-                f"Context from the knowledge base:\n{evidence_block}"
-            )
+            return render_styled_fallback(style, plan, kb_chunks, ranked)
 
-        system_prompt = (
-            "You are a grounded music recommender. "
-            "Use only the supplied tracks and knowledge-base excerpts. "
-            "Never invent songs, artists, or facts. "
-            "Explain why the picks fit the user's request in 3-5 sentences."
-        )
-        user_prompt = (
-            f"User request: {query}\n"
-            f"Detected intent: {plan.intent}\n"
-            f"Detected moods: {', '.join(plan.moods) or 'none'}\n"
-            f"Detected genres: {', '.join(plan.genres) or 'none'}\n"
-            f"Tracks to recommend (do not add others):\n{track_block}\n\n"
-            f"Knowledge-base context:\n{evidence_block}\n\n"
-            "Write a concise summary that ties the picks to the request. "
-            "Mention at least one detail from the knowledge base."
+        system_prompt, user_prompt = build_few_shot_prompt(
+            style=style, query=query, plan=plan, kb_chunks=kb_chunks, ranked=ranked
         )
         return self.llm.generate(
             [Message(role="system", content=system_prompt), Message(role="user", content=user_prompt)]
@@ -248,35 +238,25 @@ class MusicRecommenderAgent:
         kb_chunks: list[RetrievedChunk],
         ranked: list[RankedTrack],
         reasons: tuple[str, ...],
+        style: SummaryStyle = "default",
     ) -> str:
         if not self.llm.has_live_model:
-            mood_text = ", ".join(plan.moods) if plan.moods else "your request"
-            track_lines = "\n".join(
-                f"- {r.track.title} by {r.track.artist} ({r.track.genre})" for r in ranked
-            )
-            kb_lines = "\n".join(c.text.split(". ")[0] + "." for c in kb_chunks[:2]) or ""
-            return (
-                f"Recommendations for {mood_text}:\n{track_lines}\n\n"
-                f"Why these fit: {kb_lines}"
-            )
+            return render_styled_fallback(style, plan, kb_chunks, ranked)
 
-        evidence_block = "\n\n".join(
-            f"[{c.source}#{c.chunk_id}] {c.text}" for c in kb_chunks
-        ) or "(no knowledge-base context retrieved)"
-        track_block = "\n".join(
-            f"- {r.track.title} by {r.track.artist} ({r.track.genre})" for r in ranked
+        system_prompt, user_prompt = build_few_shot_prompt(
+            style=style, query=query, plan=plan, kb_chunks=kb_chunks, ranked=ranked
         )
-        prompt = (
-            "Revise the summary to fix checker issues.\n"
-            f"Issues: {', '.join(reasons)}\n"
-            f"Original request: {query}\n"
-            f"Allowed tracks:\n{track_block}\n"
-            f"Knowledge-base context:\n{evidence_block}\n\n"
-            "Return a corrected summary that explicitly mentions each track and "
-            "ties it to the user's request using the knowledge base. "
-            "Do not invent tracks not on the list."
+        revision_note = (
+            "\n\nThe previous draft failed these checks: "
+            f"{', '.join(reasons)}. Rewrite while still following every tone rule."
         )
-        return self.llm.generate([Message(role="user", content=prompt)], temperature=0.1)
+        return self.llm.generate(
+            [
+                Message(role="system", content=system_prompt),
+                Message(role="user", content=user_prompt + revision_note),
+            ],
+            temperature=0.1,
+        )
 
     def _check(
         self,
@@ -284,6 +264,7 @@ class MusicRecommenderAgent:
         ranked: list[RankedTrack],
         summary: str,
         kb_chunks: list[RetrievedChunk],
+        style: SummaryStyle = "default",
     ) -> CheckResult:
         reasons: list[str] = []
 
@@ -303,18 +284,25 @@ class MusicRecommenderAgent:
         invented = [
             t for t in candidate_titles
             if t.lower() not in ranked_titles_lower
-            and t.lower() in catalog_titles_lower  # heuristic: real titles only
+            and t.lower() in catalog_titles_lower
         ]
         if invented:
             reasons.append("recommended_unranked_tracks")
 
-        # Each ranked track should appear by title in the summary.
-        missing = [r.track.title for r in ranked if r.track.title.lower() not in summary.lower()]
-        if missing:
-            reasons.append("missing_track_mentions")
+        # Styles other than "default" intentionally don't enumerate every
+        # track (dj_brief: 30-word budget; studio_notes: top-3 highlight
+        # bullets), so "every ranked track named" is not a valid check
+        # in those styles.
+        if style == "default":
+            missing = [
+                r.track.title for r in ranked
+                if r.track.title.lower() not in summary.lower()
+            ]
+            if missing:
+                reasons.append("missing_track_mentions")
 
-        # KB grounding: the summary should reference at least one KB term when KB chunks exist.
-        if kb_chunks:
+        # KB grounding: skip for dj_brief (30-word budget can't cite KB terms).
+        if kb_chunks and style != "dj_brief":
             kb_terms = set()
             for c in kb_chunks:
                 kb_terms.update(re.findall(r"[a-zA-Z]{5,}", c.text.lower()))
