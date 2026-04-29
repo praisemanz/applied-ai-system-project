@@ -1,6 +1,6 @@
 # TuneSage — Agentic Music Recommender with RAG
 
-> **Demo video:** _Loom walkthrough — paste Loom URL here once recorded_ · Walkthrough script: [LOOM_SCRIPT.md](LOOM_SCRIPT.md)
+> **Demo video:** _Loom currently not working: It's been down for some reason. Video was recorded but I will add the link once Loom starts working_ · Walkthrough script: [LOOM_SCRIPT.md](LOOM_SCRIPT.md)
 > **Reflections / model card:** [model_card.md](model_card.md)
 
 ## Title and Summary
