@@ -14,7 +14,8 @@ from src.music_agent.logging_utils import configure_logging
 
 
 def evaluate_case(agent: MusicRecommenderAgent, case: dict) -> dict:
-    response = agent.recommend(case["query"])
+    style = case.get("style", "default")
+    response = agent.recommend(case["query"], style=style)
     track_lookup = {t.id: t for t in agent.catalog.all_tracks}
 
     failures: list[str] = []
@@ -31,6 +32,31 @@ def evaluate_case(agent: MusicRecommenderAgent, case: dict) -> dict:
             "confidence": response.confidence,
             "refused": response.refused,
         }
+
+    if "expect_style_compliant" in case:
+        if not response.style_metrics.get("compliant", False):
+            failures.append(
+                "style_violations: "
+                + ", ".join(response.style_metrics.get("violations", ()))
+            )
+
+    if "expect_max_words" in case:
+        words = response.style_metrics.get("word_count", 0)
+        if words > case["expect_max_words"]:
+            failures.append(f"summary_too_long: {words} > {case['expect_max_words']}")
+
+    if "expect_baseline_word_delta_min" in case:
+        baseline = agent.recommend(case["query"], style="default")
+        delta = (baseline.style_metrics.get("word_count", 0) if baseline.style_metrics
+                 else len(baseline.summary.split()))
+        styled_words = (response.style_metrics.get("word_count", 0) if response.style_metrics
+                        else len(response.summary.split()))
+        observed = delta - styled_words
+        if observed < case["expect_baseline_word_delta_min"]:
+            failures.append(
+                f"styled_not_shorter_enough: delta={observed} < "
+                f"{case['expect_baseline_word_delta_min']}"
+            )
 
     if "expect_intent" in case and response.intent != case["expect_intent"]:
         failures.append(f"intent_mismatch: got {response.intent} expected {case['expect_intent']}")
@@ -78,6 +104,8 @@ def evaluate_case(agent: MusicRecommenderAgent, case: dict) -> dict:
         "failures": failures,
         "intent": response.intent,
         "confidence": response.confidence,
+        "style": response.style,
+        "style_metrics": response.style_metrics,
         "recommendations": [
             {"title": r.title, "artist": r.artist, "genre": r.genre, "score": r.score}
             for r in response.recommendations
