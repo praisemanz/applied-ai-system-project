@@ -50,7 +50,20 @@ Open [src/music_agent/agent.py](src/music_agent/agent.py) on the `recommend` met
 Open [src/music_agent/scoring.py](src/music_agent/scoring.py):
 - "Public scoring API — `score_song` and `recommend_songs`. Three modes. The artist-penalty pass is here, not buried in the agent."
 
-## 4:00 – 5:00 · Reliability + Guardrails
+## 4:00 – 4:45 · Specialization (Few-Shot Constrained Tone)
+
+Same query, three styles back to back:
+```bash
+python -m src.music_agent.cli "calm lo-fi music for studying" --style default
+python -m src.music_agent.cli "calm lo-fi music for studying" --style studio_notes
+python -m src.music_agent.cli "high energy workout playlist for running" --style dj_brief
+```
+Talking points:
+- "Three summary styles, all running on the same retrieval and ranking. The difference is the **specialization layer**."
+- Open `src/music_agent/specialization.py`: "Two synthetic few-shot exemplars per style for the live-LLM path; constraint-respecting deterministic renderers for the offline path. Both share the same `style_compliance` contract."
+- Point at the `Style metrics` line at the bottom of each output: "20 words, second_person=True, compliant=True for dj_brief. 69 words, bullets=True for studio_notes. ~80 words for the baseline. The difference is *measured*, not just claimed."
+
+## 4:45 – 5:30 · Reliability + Guardrails
 
 Run the refusal demo:
 ```bash
@@ -62,15 +75,15 @@ Run the eval harness:
 ```bash
 python eval/run_eval.py | tail -20
 ```
-- "Six benchmark cases — five pass, one fails. The failure is the planner brittleness I document in the model card: 'lo-fi' as user shorthand vs. the catalog's exact 'Lo-fi Hip Hop'. Confidence is still 0.95, recommendations are correct — only the intent label is wrong."
+- "Eight benchmark cases — seven pass, one fails. The failure is the planner brittleness I document in the model card: 'lo-fi' as user shorthand vs. the catalog's exact 'Lo-fi Hip Hop'. Confidence is still 0.95, recommendations are correct — only the intent label is wrong. The two new specialization cases both pass with measurable style compliance."
 
 Run the test suite:
 ```bash
 pytest -q
 ```
-- "Twenty-four tests, all green: catalog filtering, planner intent detection, three ranking modes, the artist penalty, three-profile sanity check, refusal flow."
+- "Thirty-three tests, all green: catalog filtering, planner intent detection, three ranking modes, the artist penalty, three-profile sanity check, refusal flow, and nine specialization tests including a baseline-vs-styled measurable-difference assertion."
 
-## 5:00 – 6:00 · What I Learned + Wrap
+## 5:30 – 6:00 · What I Learned + Wrap
 
 > "Three things this project taught me:"
 >

@@ -1,0 +1,26 @@
+Profile: Cardio EDM Runner
+Description: Runs intervals; needs a relentless, danceable, high-tempo set with no slow tracks.
+Ranking mode: mood_first    |    Style: dj_brief
+Artist penalty: 0.5
+
+Recommendations:
+  1. D.A.N.C.E. by Justice  [House]  score=8.488
+     features: tempo=118 BPM, energy=0.84, valence=0.78, danceability=0.9, popularity=78
+     why: mood match: energetic, party; genre match: House; tempo 118 BPM in range; popularity 78 >= min
+  2. One More Time by Daft Punk  [House]  score=8.47
+     features: tempo=123 BPM, energy=0.88, valence=0.82, danceability=0.92, popularity=92
+     why: mood match: energetic, party; genre match: House; tempo 123 BPM in range; popularity 92 >= min
+  3. Dear Maria, Count Me In by All Time Low  [Pop Punk]  score=8.382
+     features: tempo=168 BPM, energy=0.86, valence=0.78, danceability=0.58, popularity=82
+     why: mood match: energetic, party; genre match: Pop Punk; tempo 168 BPM in range; popularity 82 >= min
+  4. Misery Business by Paramore  [Pop Punk]  score=8.262
+     features: tempo=174 BPM, energy=0.92, valence=0.65, danceability=0.55, popularity=88
+     why: mood match: energetic, party; genre match: Pop Punk; tempo 174 BPM in range; popularity 88 >= min
+  5. Around the World by Daft Punk  [House]  score=7.942
+     features: tempo=121 BPM, energy=0.85, valence=0.8, danceability=0.95, popularity=88
+     why: mood match: energetic, party; genre match: House; tempo 121 BPM in range; popularity 88 >= min; artist diversity penalty x1
+
+Styled summary:
+You wanted energetic, so 'D.A.N.C.E.' opens at 118 BPM and 'One More Time' keeps it locked. Ready?
+
+Style metrics: words=17, second_person=True, bullets=False, compliant=True

@@ -1,0 +1,34 @@
+Intent: mood    |    Mode: mood_first    |    Style: studio_notes
+
+Recommendations:
+  - Aruarian Dance by Nujabes  [Lo-fi Hip Hop]  score=6.08
+      why: mood match: focus, calm; tempo 86 BPM in range
+  - Snow by Tomppabeats  [Lo-fi Hip Hop]  score=6.0
+      why: mood match: focus, calm; tempo 78 BPM in range
+  - An Ending (Ascent) by Brian Eno  [Ambient]  score=5.76
+      why: mood match: focus, calm; tempo 60 BPM in range
+  - Endoplasmic by Com Truise  [Synthwave]  score=5.55
+      why: mood match: focus, calm; tempo 96 BPM in range
+  - Feather by Nujabes  [Lo-fi Hip Hop]  score=5.252
+      why: mood match: focus, calm; tempo 90 BPM in range; artist diversity penalty x1
+
+Summary:
+- 'Aruarian Dance' (Nujabes, Lo-fi Hip Hop): 86 BPM, energy 0.32, valence 0.45; mood match: focus, calm.
+- 'Snow' (Tomppabeats, Lo-fi Hip Hop): 78 BPM, energy 0.28, valence 0.4; mood match: focus, calm.
+- 'An Ending (Ascent)' (Brian Eno, Ambient): 60 BPM, energy 0.1, valence 0.5; mood match: focus, calm.
+- KB note [moods.md#0]: Focus and Study
+For focus work, prefer low energy, low vocal density, and steady rhythm.
+
+Citations:
+  - moods.md#0
+  - genres.md#5
+  - genres.md#4
+  - catalog:t001
+  - catalog:t003
+  - catalog:t016
+  - catalog:t006
+  - catalog:t002
+
+Confidence: 0.95
+Checks passed: True
+Style metrics: words=69, second_person=False, bullets=True, compliant=True

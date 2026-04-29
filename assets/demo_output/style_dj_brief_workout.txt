@@ -1,0 +1,27 @@
+Intent: mood    |    Mode: mood_first    |    Style: dj_brief
+
+Recommendations:
+  - Dear Maria, Count Me In by All Time Low  [Pop Punk]  score=3.91
+      why: mood match: energetic; tempo 168 BPM in range
+  - Misery Business by Paramore  [Pop Punk]  score=3.88
+      why: mood match: energetic; tempo 174 BPM in range
+  - Sugar, We're Goin Down by Fall Out Boy  [Pop Punk]  score=3.82
+      why: mood match: energetic; tempo 156 BPM in range
+  - D.A.N.C.E. by Justice  [House]  score=3.11
+      why: mood match: energetic
+  - Around the World by Daft Punk  [House]  score=3.1
+      why: mood match: energetic
+
+Summary:
+You wanted energetic, so 'Dear Maria, Count Me In' opens at 168 BPM and 'Misery Business' keeps it locked. Ready?
+
+Citations:
+  - catalog:t021
+  - catalog:t019
+  - catalog:t020
+  - catalog:t012
+  - catalog:t026
+
+Confidence: 0.59
+Checks passed: True
+Style metrics: words=20, second_person=True, bullets=False, compliant=True

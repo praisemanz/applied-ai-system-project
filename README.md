@@ -31,9 +31,10 @@ These three are *not* the same: input data is what the system knows about a song
 - **Knowledge Base / RAG** ([knowledge_base.py](src/music_agent/knowledge_base.py)) — TF-IDF over [assets/genres.md](assets/genres.md), [assets/moods.md](assets/moods.md), [assets/artists.md](assets/artists.md).
 - **Track Catalog** ([track_catalog.py](src/music_agent/track_catalog.py)) — [data/tracks.json](data/tracks.json), 30 tracks × 15 attributes.
 - **Scoring API** ([scoring.py](src/music_agent/scoring.py)) — public `score_song(prefs, song, mode)` and `recommend_songs(prefs, songs, top_k, mode, artist_penalty)`. Three modes: `mood_first`, `genre_first`, `energy_similarity`.
-- **Recommender + Checker + Reviser** ([agent.py](src/music_agent/agent.py)) — ties tracks to KB context, validates grounding, broadens filters and regenerates once on failure.
+- **Specialization** ([specialization.py](src/music_agent/specialization.py)) — three summary styles (`default`, `dj_brief`, `studio_notes`) with **few-shot exemplars** for the LLM path and constraint-respecting deterministic renderers for the offline path. `style_compliance` returns measurable metrics (word count, second person, bullets, compliance flag).
+- **Recommender + Checker + Reviser** ([agent.py](src/music_agent/agent.py)) — ties tracks to KB context, validates grounding, broadens filters and regenerates once on failure. Per-style checks adapt (e.g., `dj_brief` skips "every track named" because the 30-word budget can't fit all five).
 - **Logger** ([logging_utils.py](src/music_agent/logging_utils.py)) — every stage writes a JSON line to [logs/agent_trace.jsonl](logs/agent_trace.jsonl).
-- **Evaluator** ([eval/run_eval.py](eval/run_eval.py)) — 6 benchmark cases, writes [eval/last_report.json](eval/last_report.json).
+- **Evaluator** ([eval/run_eval.py](eval/run_eval.py)) — 8 benchmark cases (6 retrieval + 2 specialization compliance), writes [eval/last_report.json](eval/last_report.json).
 
 ### System Diagram
 ```mermaid
@@ -47,21 +48,23 @@ flowchart LR
     R2 --> AP[Artist Diversity Penalty]
     R1 --> D[Recommender LLM or fallback]
     AP --> D
-    D --> K[Checker grounding + slots]
+    D --> S[Specialization few-shot + style rules]
+    S --> K[Checker grounding + slots + style compliance]
     K -->|fail| V[Reviser broaden + regenerate]
     V --> K
-    K -->|pass| O2[Recommendations + Summary + Citations]
+    K -->|pass| O2[Recommendations + Styled Summary + Citations]
 
     P --> L[(Trace Logs)]
     R1 --> L
     R2 --> L
     D --> L
+    S --> L
     K --> L
     V --> L
 
-    T[Eval Harness] --> C
+    T[Eval Harness 8 cases] --> C
     H[Human Reviewer] --> T
-    T --> M[Metrics Report]
+    T --> M[Metrics Report + Style Compliance]
 ```
 
 The Mermaid source is also at [assets/architecture.mmd](assets/architecture.mmd) so it can be exported to PNG via the Mermaid Live Editor.
@@ -82,6 +85,10 @@ python -m src.music_agent.cli --profile lofi_studier --table
 
 # Free-form query (uses RAG + agentic loop)
 python -m src.music_agent.cli "calm lo-fi music for studying" --table
+
+# Specialization (few-shot constrained tone)
+python -m src.music_agent.cli "high energy workout playlist for running" --style dj_brief
+python -m src.music_agent.cli "calm lo-fi music for studying" --style studio_notes
 
 # Tests + evaluation
 pytest -q
@@ -227,10 +234,11 @@ Same profile, three different `--mode` values:
 
 | Metric | Value |
 | --- | --- |
-| Unit + integration tests | **24 / 24 passed** (`pytest -q`) |
-| Eval cases | **5 / 6 passed** (83.33%) |
-| Average eval confidence | **0.57** |
+| Unit + integration tests | **33 / 33 passed** (`pytest -q`) |
+| Eval cases | **7 / 8 passed** (87.5%) |
+| Average eval confidence | **0.62** |
 | Three-profile distinctness | **3 / 3 distinct top picks** |
+| Specialization styles measurably different | ✓ (dj_brief ≥20 words shorter; studio_notes bullet-formatted) |
 
 **Per-case eval breakdown:**
 - `study_focus_request` — **FAIL** (intent mismatch: planner classified the query as `mood` because the user wrote "lo-fi" rather than the catalog's exact "Lo-fi Hip Hop"). Confidence still 0.95 and recommendations were correct — only the intent label is wrong. Documented as a known planner limitation in [model_card.md](model_card.md#limitations-and-biases).
@@ -239,10 +247,14 @@ Same profile, three different `--mode` values:
 - `romantic_dinner` — **PASS** (Neo-Soul + Indie Folk).
 - `disallowed_refusal` — **PASS** (no retrieval, refusal returned).
 - `indie_folk_genre` — **PASS** (3 Indie Folk tracks).
+- `specialization_dj_brief_compliance` — **PASS** (20 words ≤ 30, second-person present, ≥20-word delta vs. baseline).
+- `specialization_studio_notes_compliance` — **PASS** (bullets present, 69 words ≤ 90, no first-person).
 
 **What worked, what didn't, what I learned:** see [model_card.md](model_card.md#testing-results) for the full discussion.
 
-## Stretch Features Implemented (+8 pts)
+## Stretch Features Implemented
+
+### Project 3 stretch (+8 of 12 pts)
 
 | Stretch feature | Where |
 | --- | --- |
@@ -250,6 +262,43 @@ Same profile, three different `--mode` values:
 | **+2 — Diversity / artist penalty** (artist appearances penalize subsequent scores; documented in model card) | `recommend_songs(..., artist_penalty=0.5)` in [scoring.py](src/music_agent/scoring.py); see also [model_card.md](model_card.md#diversity--artist-penalty) |
 | **+2 — Multiple ranking modes** (`mood_first`, `genre_first`, `energy_similarity`) selectable via `--mode` flag | [scoring.py](src/music_agent/scoring.py) (`ALL_MODES`), [cli.py](src/music_agent/cli.py) |
 | **+2 — Visual table output** via `tabulate` library, enabled with `--table` flag | [cli.py](src/music_agent/cli.py) |
+
+### Final-project advanced AI features (+8 pts, all four buckets)
+
+| Bucket | What I built | Where |
+| --- | --- | --- |
+| **+2 — RAG enhancement** (multiple custom documents) | TF-IDF retrieval over 3 curated markdown docs (`assets/genres.md`, `moods.md`, `artists.md`) **plus** structured catalog retrieval; both surface in citations and per-track reasons. Measurable improvement: KB grounding is part of the checker (`weak_kb_grounding` triggers revision) and 5/6 baseline eval cases require KB term overlap. | [knowledge_base.py](src/music_agent/knowledge_base.py), [agent.py](src/music_agent/agent.py) |
+| **+2 — Agentic workflow** (multi-step, observable) | Plan → Retrieve → Recommend → Check → Revise loop. Every stage emits a JSON-line trace to `logs/agent_trace.jsonl` (`plan`, `kb_retrieve`, `catalog_search`, `draft`, `check`, `revise`, `recheck`, `final_response`). | [agent.py](src/music_agent/agent.py), [logging_utils.py](src/music_agent/logging_utils.py) |
+| **+2 — Fine-tuning / specialization** (few-shot, constrained tone) | Three summary styles (`default`, `dj_brief`, `studio_notes`). Live-LLM path uses **few-shot exemplars** (`build_few_shot_prompt`); offline path uses constraint-respecting deterministic renderers. `style_compliance` returns hard metrics (word_count, second_person, bullets, compliant) and the eval asserts measurable difference: `dj_brief` outputs are ≥20 words shorter than the baseline and use second person; `studio_notes` outputs are bullet-formatted while the baseline is prose. | [specialization.py](src/music_agent/specialization.py), eval cases `specialization_dj_brief_compliance` + `specialization_studio_notes_compliance`, tests in [test_specialization.py](tests/test_specialization.py) |
+| **+2 — Test harness / evaluation script** | `eval/run_eval.py` — 8 cases, writes `eval/last_report.json`. 33-test pytest suite covers catalog, planner, scoring (3 modes + artist penalty), specialization (style compliance + measurable difference vs baseline), refusal flow, and CLI. | [eval/run_eval.py](eval/run_eval.py), [tests/](tests/) |
+
+### Specialization Demo (Style Comparison)
+Same query, two different styles, both deterministic (no API key needed):
+
+```bash
+python -m src.music_agent.cli "calm lo-fi music for studying" --style default
+python -m src.music_agent.cli "calm lo-fi music for studying" --style studio_notes
+python -m src.music_agent.cli "high energy workout playlist for running" --style dj_brief
+```
+
+| Metric | Baseline (`default`) | `dj_brief` | `studio_notes` |
+| --- | --- | --- | --- |
+| Words | ~80 | **20** | **69** |
+| Second-person | ✗ | ✓ | ✗ |
+| Bullet-formatted | ✗ | ✗ | ✓ |
+| Compliant w/ style rules | n/a | ✓ | ✓ |
+
+DJ-brief output (verbatim, captured in [assets/demo_output/style_dj_brief_workout.txt](assets/demo_output/style_dj_brief_workout.txt)):
+```text
+You wanted energetic, so 'Dear Maria, Count Me In' opens at 168 BPM and 'Misery Business' keeps it locked. Ready?
+```
+Studio-notes output (verbatim, [assets/demo_output/style_studio_notes_lofi.txt](assets/demo_output/style_studio_notes_lofi.txt)):
+```text
+- 'Aruarian Dance' (Nujabes, Lo-fi Hip Hop): 86 BPM, energy 0.32, valence 0.45; mood match: focus, calm.
+- 'Snow' (Tomppabeats, Lo-fi Hip Hop): 78 BPM, energy 0.28, valence 0.4; mood match: focus, calm.
+- 'An Ending (Ascent)' (Brian Eno, Ambient): 60 BPM, energy 0.1, valence 0.5; mood match: focus, calm.
+- KB note [moods.md#0]: Focus and Study ...
+```
 
 ## Reflection (Portfolio)
 

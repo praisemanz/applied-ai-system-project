@@ -37,7 +37,7 @@
 - [x] Algorithmic approach explained in plain language: Plan → Retrieve → Recommend → Check → Revise, with the scoring function expanded.
 - [x] Limitations / biases identified: curation bias, small dataset, popularity bias, keyword-based safety, planner brittleness, confidence-internal-only. Plus one improvement idea (embedding-based mood detection).
 
-## Stretch Features (+12 possible, +8 attempted)
+## Stretch Features — Project 3 (+12 possible, +8 attempted)
 
 ### +2 — Additional Song Attributes
 - [x] 5 new attributes added: `release_year`, `popularity`, `danceability`, `instrumentalness`, `detailed_mood_tags`.
@@ -60,6 +60,30 @@
 - [x] Enabled with `--table` flag.
 - [x] Output included in [README.md](README.md) sample interactions and saved to [assets/demo_output/](assets/demo_output/).
 
+## Stretch Features — Final-Project Generic (+8 attempted, all four buckets)
+
+### +2 — RAG Enhancement (multiple custom documents, measurable improvement)
+- [x] TF-IDF retrieval over **3** curated markdown documents in `assets/`: [genres.md](assets/genres.md), [moods.md](assets/moods.md), [artists.md](assets/artists.md).
+- [x] Plus **structured catalog retrieval** over [data/tracks.json](data/tracks.json) — dual-retrieval architecture documented in README.
+- [x] Measurable improvement: KB grounding is asserted by the checker (`weak_kb_grounding` triggers reviser), and 6/8 eval cases require KB term overlap with the summary.
+
+### +2 — Agentic Workflow Enhancement (observable intermediate steps)
+- [x] Multi-step Plan → Retrieve → Recommend → Check → Revise loop in [agent.py](src/music_agent/agent.py).
+- [x] Every stage emits a JSON-line trace via [logging_utils.py](src/music_agent/logging_utils.py): `guardrail`, `plan`, `kb_retrieve`, `catalog_search`, `draft`, `check`, `revise_filters`, `revise`, `recheck`, `final_response`, `profile_recommend`.
+- [x] One-pass reviser broadens over-restrictive filters when the checker fails.
+
+### +2 — Fine-Tuning / Specialization (few-shot, constrained tone, measurable)
+- [x] Three summary styles: `default`, `dj_brief`, `studio_notes` ([specialization.py](src/music_agent/specialization.py), `--style` CLI flag).
+- [x] **Few-shot exemplars** (curated synthetic input/output pairs) injected into the LLM system prompt for non-default styles.
+- [x] Constraint-respecting deterministic renderers for the offline (no API key) path.
+- [x] Measurable difference vs. baseline: `style_compliance()` returns word_count, second_person, bullets, compliant; `baseline_difference()` returns word delta + Jaccard.
+- [x] Two eval cases (`specialization_dj_brief_compliance`, `specialization_studio_notes_compliance`) lock the metrics; both PASS.
+- [x] 9 dedicated pytest cases in [tests/test_specialization.py](tests/test_specialization.py).
+
+### +2 — Test Harness / Evaluation Script
+- [x] [`eval/run_eval.py`](eval/run_eval.py) runs **8** benchmark cases (6 retrieval + 2 specialization) and writes [`eval/last_report.json`](eval/last_report.json) with per-case pass/fail, intent, confidence, style metrics, and recommendations.
+- [x] **33** pytest cases in [`tests/`](tests/) cover catalog, planner, scoring (3 modes + artist penalty), specialization, refusal flow, CLI, and three-profile distinctness.
+
 ## Submission Requirements
 
 - [x] **Code pushed** to GitHub repo (public).
@@ -73,12 +97,13 @@
 
 ## Execution Verification
 
-- [x] `pytest -q` → **24/24 passed**.
-- [x] `python eval/run_eval.py` → **5/6 cases pass**, avg confidence 0.57, written to [eval/last_report.json](eval/last_report.json).
+- [x] `pytest -q` → **33/33 passed**.
+- [x] `python eval/run_eval.py` → **7/8 cases pass**, avg confidence 0.62, written to [eval/last_report.json](eval/last_report.json).
 - [x] Three profile demos render correct, distinct top picks with table output.
 - [x] Refusal demo returns intent `refusal`, confidence 0.1, no retrieval performed.
+- [x] Specialization demo: `dj_brief` → 20-word second-person summary; `studio_notes` → bullet list with KB citation; baseline → 80-word prose.
 - [x] Trace logs populate at [logs/agent_trace.jsonl](logs/agent_trace.jsonl).
 
 ---
 
-**Status: COMPLETE.** All required rubric items + 4 of 4 stretch features implemented and verified through execution.
+**Status: COMPLETE.** All Project 3 required items (21/21) + 4/4 Project-3 stretch features + 4/4 final-project advanced AI buckets (RAG + Agentic + Specialization + Testing) implemented and verified through execution.

@@ -76,6 +76,32 @@ After scoring, `recommend_songs` re-ranks results to penalize artist repetition.
 
 This reduces filter-bubble effects: without it, high-affinity profiles (e.g. an EDM runner with no Justice in the catalog but three Daft Punk tracks) would get a top-5 dominated by one artist.
 
+### Specialization (Few-Shot Constrained Tone)
+
+The recommender supports three summary styles via `--style`:
+
+- **`default`** — neutral 3-5 sentence prose explanation (baseline).
+- **`dj_brief`** — second-person, ≤ 30 words, ends with a hook question, no first-person pronouns. Designed for in-app radio voiceovers.
+- **`studio_notes`** — bullet list, ≤ 90 words, every bullet cites a track or KB chunk, no first-person pronouns. Designed for engineer-facing notes.
+
+**Implementation.**
+- Live LLM path uses **few-shot exemplars** ([`build_few_shot_prompt` in `specialization.py`](src/music_agent/specialization.py)). Two synthetic input/output pairs per style are injected into the system prompt with explicit tone rules. The exemplars use *fictitious* track names (`Soft Static`, `Pulse Run`) so the model cannot confuse them with real catalog content.
+- Offline (no API key) path uses **constraint-respecting deterministic renderers** (`_render_dj_brief`, `_render_studio_notes`) that hard-enforce word budget, terminator, and bullet structure.
+- The checker adapts to each style: `dj_brief` skips the "every track named in summary" check (a 30-word budget can't fit five titles); `studio_notes` skips it too (top-3 highlight format).
+- `style_compliance(text, style)` returns a dict with `word_count`, `has_second_person`, `has_first_person`, `has_bullets`, `ends_well`, `compliant`, and `violations`. This is the contract the eval harness uses to assert measurable difference.
+
+**Measurable difference vs. baseline.**
+
+| Metric (lo-fi study query) | `default` | `dj_brief` | `studio_notes` |
+| --- | --- | --- | --- |
+| Word count | ~80 | **20** | **69** |
+| Uses second-person | ✗ | ✓ | ✗ |
+| Bullet-formatted | ✗ | ✗ | ✓ |
+| Style-compliant per `style_compliance()` | n/a | ✓ | ✓ |
+| Word delta from baseline | 0 | **-60** | -11 |
+
+Two eval cases (`specialization_dj_brief_compliance`, `specialization_studio_notes_compliance`) and seven pytest cases (`tests/test_specialization.py`) lock these guarantees. The pytest case `test_styled_output_measurably_differs_from_baseline` asserts the word delta and Jaccard token overlap thresholds in code so regressions are caught automatically.
+
 ## Limitations and Biases
 
 **Curation bias.** The 30-track catalog was hand-selected by one person. Genres skew toward Western indie, electronic, and soul styles. There is no representation of country, classical, K-pop, Afrobeat, regional Latin styles, hip hop's mainstream, or non-Western popular music. Mood-to-feature mappings (e.g. "romantic" → high valence + high acousticness) reflect Western listening conventions.
@@ -98,10 +124,11 @@ Replace the keyword-based mood detection in [src/music_agent/planner.py](src/mus
 
 | Test | Result |
 | --- | --- |
-| Unit + integration tests (`pytest -q`) | **24 / 24 passed** |
-| Eval cases (`python eval/run_eval.py`) | **5 / 6 passed (83.33%)** |
-| Average confidence across eval cases | **0.57** |
+| Unit + integration tests (`pytest -q`) | **33 / 33 passed** |
+| Eval cases (`python eval/run_eval.py`) | **7 / 8 passed (87.5%)** |
+| Average confidence across eval cases | **0.62** |
 | Three-profile sanity check | All 3 profiles produce **distinct** top picks (Aruarian Dance / D.A.N.C.E. / Coffee) |
+| Specialization compliance (dj_brief, studio_notes) | Both PASS — measurable word/structure delta vs. baseline |
 
 The single failing eval case (`study_focus_request`) is the planner-brittleness limitation above: when the user types "lo-fi" instead of "Lo-fi Hip Hop", intent is classified as `mood` rather than `genre_and_mood` even though the recommendations themselves are correct (confidence 0.95).
 
@@ -112,6 +139,10 @@ The single failing eval case (`study_focus_request`) is the planner-brittleness 
 **Flawed suggestion.** The AI also suggested ranking tracks by cosine similarity over a synthetic "track embedding" built from concatenated mood tags. I implemented a draft and the results were worse than a simple weighted-feature score: tracks with many mood tags dominated the top-K regardless of fit. I rolled the change back and kept the explicit additive scoring in [src/music_agent/scoring.py](src/music_agent/scoring.py), which is both more interpretable and more accurate at this catalog size.
 
 **Pattern observed.** AI suggestions were strongest when shaping *architecture* (clean separation of RAG vs. structured scoring, the agentic Plan/Check/Revise loop) and weakest when proposing *quantitative tricks* (synthetic embeddings, learned weights) for a catalog this small. The takeaway: trust AI for code structure, verify it on numerical claims.
+
+**Second helpful suggestion (specialization).** When I added the constrained-tone styles, the AI proposed splitting the work into a deterministic renderer (offline path) plus few-shot exemplars (live-LLM path), rather than relying on the LLM alone. This was correct: it means the styles work without an API key, the offline output is testable, and the eval harness can assert measurable compliance. Without that split I would have had un-reproducible test results that depended on whether `OPENAI_API_KEY` was set.
+
+**Second flawed suggestion (specialization).** The AI also suggested measuring style difference using only Jaccard token overlap between baseline and styled outputs. I implemented that and it failed for `studio_notes`: bullets and prose share ~70% of their tokens because both list the same track names, artists, BPMs, and genres. I replaced the test with a *structural* assertion (`studio_notes` must contain bullet markers; baseline must not), which catches real differences and ignores spurious lexical overlap. Same lesson as before: trust AI on structure, verify on metrics.
 
 ## Reproducibility
 
@@ -133,6 +164,10 @@ python -m src.music_agent.cli "calm lo-fi music for studying" --table
 # Switch ranking modes
 python -m src.music_agent.cli --profile lofi_studier --mode energy_similarity --table
 python -m src.music_agent.cli --profile lofi_studier --mode genre_first --table
+
+# Specialization (few-shot constrained tone)
+python -m src.music_agent.cli "high energy workout playlist for running" --style dj_brief
+python -m src.music_agent.cli "calm lo-fi music for studying" --style studio_notes
 
 # Tests + evaluation
 pytest -q
