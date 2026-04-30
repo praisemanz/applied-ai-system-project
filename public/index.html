@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TuneSage</title>
+  <style>
+    :root {
+      --bg: #0b0b14;
+      --panel: #15152a;
+      --panel-2: #1d1d35;
+      --border: rgba(167, 139, 250, 0.25);
+      --text: #ececf5;
+      --muted: #b5b7d0;
+      --accent: #a78bfa;
+      --accent2: #38bdf8;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(167,139,250,0.18), transparent 60%),
+        radial-gradient(900px 500px at 110% 0%, rgba(56,189,248,0.12), transparent 60%),
+        var(--bg);
+    }
+    .container { max-width: 1050px; margin: 28px auto; padding: 0 18px; }
+    .hero {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      background: linear-gradient(135deg, rgba(167,139,250,0.18), rgba(56,189,248,0.10));
+      margin-bottom: 16px;
+    }
+    .hero h1 { margin: 0; font-size: 2.2rem; }
+    .hero p { margin: 8px 0 0; color: var(--muted); }
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    label { display: block; font-size: 0.86rem; color: var(--muted); margin-bottom: 4px; }
+    input, select, button, textarea {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+    button {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0b0b14;
+      font-weight: 700;
+      border: 0;
+      cursor: pointer;
+    }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .pill {
+      display: inline-block;
+      margin-right: 6px;
+      margin-top: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      background: rgba(167,139,250,0.14);
+    }
+    .status {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(52,211,153,0.35);
+      background: rgba(52,211,153,0.10);
+      color: #6ee7b7;
+      margin-top: 10px;
+    }
+    .status.warn { border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.10); color: #fde68a; }
+    .status.danger { border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.10); color: #fecaca; }
+    .rec {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 8px;
+      background: rgba(255,255,255,0.02);
+    }
+    .rec h3 { margin: 0; font-size: 1rem; }
+    .rec .meta { color: var(--muted); font-size: 0.85rem; margin: 4px 0; }
+    code {
+      background: rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.78rem;
+    }
+    .hidden { display: none; }
+    @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>TuneSage</h1>
+      <p>Static frontend + FastAPI backend for Vercel deployment.</p>
+      <div class="row">
+        <span class="pill">RAG</span>
+        <span class="pill">Agentic loop</span>
+        <span class="pill">Grounded citations</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="grid">
+        <div>
+          <label>Request Type</label>
+          <select id="requestType">
+            <option value="query">Free-form query</option>
+            <option value="profile">Saved profile</option>
+          </select>
+        </div>
+        <div>
+          <label>Mode</label>
+          <select id="mode">
+            <option value="mood_first">mood_first</option>
+            <option value="genre_first">genre_first</option>
+            <option value="energy_similarity">energy_similarity</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="queryBlock" style="margin-top:10px;">
+        <label>Query</label>
+        <textarea id="query" rows="2" placeholder="e.g. calm lo-fi music for studying"></textarea>
+      </div>
+
+      <div id="profileBlock" class="hidden" style="margin-top:10px;">
+        <label>Profile</label>
+        <select id="profile"></select>
+      </div>
+
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <label>Style</label>
+          <select id="style">
+            <option value="default">default</option>
+            <option value="dj_brief">dj_brief</option>
+            <option value="studio_notes">studio_notes</option>
+          </select>
+        </div>
+        <div>
+          <label>Top K</label>
+          <input id="topK" type="number" min="1" max="10" value="5" />
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label>Artist Penalty (0.0 - 2.0)</label>
+        <input id="artistPenalty" type="number" min="0" max="2" step="0.1" value="0.5" />
+      </div>
+
+      <div style="margin-top:12px;">
+        <button id="submitBtn">Recommend</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">API endpoint: <code>/api/recommend</code></div>
+    </section>
+
+    <section id="resultPanel" class="panel hidden">
+      <h2 style="margin-top:0;">Result</h2>
+      <div id="status"></div>
+      <div id="summary" style="margin-top:12px;"></div>
+      <div id="citations" style="margin-top:12px;"></div>
+      <div id="recs" style="margin-top:12px;"></div>
+    </section>
+  </div>
+
+  <script>
+    const requestType = document.getElementById("requestType");
+    const queryBlock = document.getElementById("queryBlock");
+    const profileBlock = document.getElementById("profileBlock");
+    const profileSelect = document.getElementById("profile");
+
+    const resultPanel = document.getElementById("resultPanel");
+    const statusEl = document.getElementById("status");
+    const summaryEl = document.getElementById("summary");
+    const citationsEl = document.getElementById("citations");
+    const recsEl = document.getElementById("recs");
+
+    function setType() {
+      const t = requestType.value;
+      queryBlock.classList.toggle("hidden", t !== "query");
+      profileBlock.classList.toggle("hidden", t !== "profile");
+    }
+    requestType.addEventListener("change", setType);
+    setType();
+
+    async function loadProfiles() {
+      try {
+        const res = await fetch("/api/profiles");
+        if (!res.ok) return;
+        const data = await res.json();
+        profileSelect.innerHTML = "";
+        for (const p of data.profiles || []) {
+          const opt = document.createElement("option");
+          opt.value = p.key;
+          opt.textContent = `${p.name} (${p.key})`;
+          profileSelect.appendChild(opt);
+        }
+      } catch (_) {}
+    }
+    loadProfiles();
+
+    function renderStatus(text, type = "ok") {
+      statusEl.className = `status${type === "warn" ? " warn" : type === "danger" ? " danger" : ""}`;
+      statusEl.textContent = text;
+    }
+
+    function renderResult(data) {
+      resultPanel.classList.remove("hidden");
+      recsEl.innerHTML = "";
+      citationsEl.innerHTML = "";
+
+      if (data.refused) {
+        renderStatus("Guardrail engaged: request refused as out-of-scope.", "danger");
+      } else if (data.passed_checks === false) {
+        renderStatus(`Confidence ${data.confidence ?? "?"} · checks flagged`, "warn");
+      } else {
+        renderStatus(`Confidence ${data.confidence ?? "?"} · checks passed`);
+      }
+
+      if (data.summary) {
+        summaryEl.innerHTML = `<h3>Summary</h3><div class="muted">${data.summary}</div>`;
+      } else {
+        summaryEl.innerHTML = "";
+      }
+
+      if ((data.citations || []).length) {
+        citationsEl.innerHTML = `<h3>Citations</h3>${data.citations.map(c => `<code>${c}</code>`).join(" ")}`;
+      }
+
+      for (const rec of data.recommendations || []) {
+        const why = rec.why || (rec.reasons || []).join("; ");
+        const card = document.createElement("div");
+        card.className = "rec";
+        card.innerHTML = `
+          <h3>${rec.title} - ${rec.artist}</h3>
+          <div class="meta">${rec.genre} · score ${rec.score}</div>
+          <div class="muted">${why || ""}</div>
+        `;
+        recsEl.appendChild(card);
+      }
+    }
+
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const payload = {
+        mode: document.getElementById("mode").value,
+        style: document.getElementById("style").value,
+        top_k: Number(document.getElementById("topK").value || 5),
+        artist_penalty: Number(document.getElementById("artistPenalty").value || 0.5),
+      };
+      if (requestType.value === "query") {
+        payload.query = document.getElementById("query").value.trim();
+      } else {
+        payload.profile = profileSelect.value;
+      }
+
+      resultPanel.classList.remove("hidden");
+      renderStatus("Running recommendation...");
+      summaryEl.textContent = "";
+      citationsEl.textContent = "";
+      recsEl.textContent = "";
+
+      try {
+        const res = await fetch("/api/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          renderStatus(`Error: ${data.detail || "request failed"}`, "danger");
+          return;
+        }
+        renderResult(data);
+      } catch (err) {
+        renderStatus(`Network error: ${err.message}`, "danger");
+      }
+    });
+  </script>
+</body>
+</html>

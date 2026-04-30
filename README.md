@@ -118,6 +118,40 @@ The sidebar exposes every CLI flag: ranking mode, top-K, artist diversity penalt
 
 Theme is configured in [.streamlit/config.toml](.streamlit/config.toml).
 
+### Vercel Deployment (Static Frontend + FastAPI API)
+
+For Vercel, use the production setup in this repo:
+- Static frontend at [public/index.html](public/index.html)
+- Python API at [api/index.py](api/index.py)
+- Routing config in [vercel.json](vercel.json)
+
+This avoids running Streamlit on Vercel's serverless runtime.
+
+**API endpoints**
+- `GET /api/health` — health + supported modes/styles
+- `GET /api/profiles` — saved profile metadata
+- `POST /api/recommend` — recommendation request
+
+**Example request (query mode)**
+```bash
+curl -X POST https://<your-app>.vercel.app/api/recommend \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "calm lo-fi music for studying",
+    "mode": "mood_first",
+    "style": "default",
+    "top_k": 5,
+    "artist_penalty": 0.5
+  }'
+```
+
+**Vercel project settings**
+- Root Directory: `.` (repo root)
+- Environment variables: add `OPENAI_API_KEY` if you want live LLM summaries; optional otherwise
+- No custom build command required
+
+After deploy, open your app root URL; frontend requests will call `/api/recommend` automatically.
+
 ## Sample Interactions
 
 ### Profile Demo 1 — Late-Night Lo-fi Studier
