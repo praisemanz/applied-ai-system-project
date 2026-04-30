@@ -24,6 +24,7 @@ These three are *not* the same: input data is what the system knows about a song
 
 ## Architecture Overview
 **Main components:**
+- **Web UI** ([app.py](app.py)) — Streamlit front-end. Five tabs (Discover / Profiles / Catalog / Compare / Trace) wrapping the same agent, scoring API, and specialization styles. Live API-key status, dark music-themed theme, no-emoji icon set. Run with `streamlit run app.py`.
 - **CLI** ([src/music_agent/cli.py](src/music_agent/cli.py)) — entry point. Supports both free-form `QUERY` and `--profile <key>`, with `--mode`, `--top-k`, `--artist-penalty`, `--table`, `--json` flags.
 - **Guardrails** ([agent.py](src/music_agent/agent.py)) — empty input, length cap, disallowed-term refusal.
 - **Planner** ([planner.py](src/music_agent/planner.py)) — keyword-driven intent classifier (mood / genre / similar_artist / genre_and_mood / open_ended) and slot extractor.
@@ -39,7 +40,8 @@ These three are *not* the same: input data is what the system knows about a song
 ### System Diagram
 ```mermaid
 flowchart LR
-    U[User Query or Profile] --> C[CLI]
+    U[User Query or Profile] --> UI[Web UI / CLI]
+    UI --> C[Agent Entry]
     C --> G1[Guardrails]
     G1 -->|refused| O1[Refusal Response]
     G1 -->|ok| P[Planner intent + slots]
@@ -80,6 +82,9 @@ cp .env.example .env
 # Optional but recommended for natural-language summaries:
 # export OPENAI_API_KEY=your_key_here
 
+# Web UI — recommended way to explore the system
+streamlit run app.py
+
 # Profile demo (no LLM call)
 python -m src.music_agent.cli --profile lofi_studier --table
 
@@ -96,6 +101,22 @@ python eval/run_eval.py
 ```
 
 The system runs **without** an API key (deterministic fallback summary). With `OPENAI_API_KEY` set, the summary becomes a natural-language explanation grounded in the same retrieved evidence.
+
+### Web UI ([app.py](app.py))
+
+A polished Streamlit front-end exposes every feature of the recommender — no terminal required. Launch with `streamlit run app.py` and open the URL it prints (default `http://localhost:8501`).
+
+| Tab | What it does |
+| --- | --- |
+| **Discover** | Free-form mood / genre / artist query. Runs the full agentic loop (Plan → Retrieve → Recommend → Check → Revise) and shows ranked tracks, the styled summary, KB + catalog citations, confidence, and check status. Includes one-click example queries and a refusal banner when the guardrail fires. |
+| **Profiles** | The three saved listeners (`lofi_studier`, `cardio_edm_runner`, `acoustic_indie_coffee`) rendered as picker cards. Click one to score the catalog with the current sidebar settings. |
+| **Catalog** | Browse all 30 tracks with filters (genre, era, energy range), summary metrics (avg BPM, avg energy), and a CSS bar chart of the genre breakdown. |
+| **Compare** | Side-by-side top-K for every profile under the same ranking mode — confirms the three profiles produce distinct top picks. |
+| **Trace** | Live tail of `logs/agent_trace.jsonl`. Filter by event type (`plan`, `kb_retrieve`, `catalog_search`, `draft`, `check`, `revise`, `recheck`, `final_response`) to inspect the agentic loop. |
+
+The sidebar exposes every CLI flag: ranking mode, top-K, artist diversity penalty, summary style. The header status pill shows live LLM mode when `OPENAI_API_KEY` is set, otherwise the deterministic-fallback indicator.
+
+Theme is configured in [.streamlit/config.toml](.streamlit/config.toml).
 
 ## Sample Interactions
 
