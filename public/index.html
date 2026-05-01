@@ -200,11 +200,20 @@
     requestType.addEventListener("change", setType);
     setType();
 
+    async function parseJsonResponse(res) {
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
+      }
+    }
+
     async function loadProfiles() {
       try {
         const res = await fetch("/api/profiles");
         if (!res.ok) return;
-        const data = await res.json();
+        const data = await parseJsonResponse(res);
         profileSelect.innerHTML = "";
         for (const p of data.profiles || []) {
           const opt = document.createElement("option");
@@ -282,14 +291,18 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        const data = await res.json();
+        const data = await parseJsonResponse(res);
         if (!res.ok) {
-          renderStatus(`Error: ${data.detail || "request failed"}`, "danger");
+          const msg =
+            typeof data.detail === "string"
+              ? data.detail
+              : JSON.stringify(data.detail || data);
+          renderStatus(`Error (${res.status}): ${msg}`, "danger");
           return;
         }
         renderResult(data);
       } catch (err) {
-        renderStatus(`Network error: ${err.message}`, "danger");
+        renderStatus(`Request failed: ${err.message}`, "danger");
       }
     });
   </script>

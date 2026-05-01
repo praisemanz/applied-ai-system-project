@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, model_validator
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +83,16 @@ def _catalog():
 
 
 app = FastAPI(title="TuneSage API", version="1.0.0")
+
+
+@app.exception_handler(Exception)
+def _unhandled_exception(_request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "error_type": type(exc).__name__},
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -2,7 +2,7 @@
 
 > **Demo video:** _[Loom](https://www.loom.com/share/f08c9934f758439a8a9a1c23d38a19e1)_ · 
 > **Reflections / model card:** [model_card.md](model_card.md)
-
+> **Vercel App:** [TuneSage](https://tunesage.vercel.app/)
 ## Title and Summary
 TuneSage is an applied AI system that turns a free-form mood/genre/artist request — or a saved listener profile — into a short, ranked, **grounded** list of music recommendations with human-readable explanations. Most recommenders are opaque black boxes; TuneSage shows *why* each track was picked, cites the knowledge it used, and refuses requests it can't safely handle. Every query flows through an integrated **agentic loop** (Plan → Retrieve → Recommend → Check → Revise) that combines **Retrieval-Augmented Generation** over a curated music knowledge base with a structured scoring function over a 30-track catalog.
 
@@ -126,6 +126,8 @@ For Vercel, use the production setup in this repo:
 - Routing config in [vercel.json](vercel.json)
 
 This avoids running Streamlit on Vercel's serverless runtime.
+
+On Vercel, agent trace logs write to `/tmp` (or skip silently if the filesystem is read-only); the repo default `logs/agent_trace.jsonl` is only for local runs.
 
 **API endpoints**
 - `GET /api/health` — health + supported modes/styles
