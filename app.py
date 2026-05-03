@@ -487,14 +487,21 @@ def tab_discover(opts: dict[str, Any]) -> None:
 
     run = st.button("Recommend", type="primary", width="stretch")
 
+    catalog_index = {t.id: t for t in get_catalog().all_tracks}
+
     if not run:
+        last = st.session_state.get("last_response")
+        if isinstance(last, AgentResponse):
+            st.caption(
+                f"Showing your last run for: *{st.session_state.get('last_query', '')}* "
+                "(click Recommend to run again with the current sidebar settings)."
+            )
+            _render_agent_response(last, catalog_index, last.style)
         return
 
     if not query.strip():
         st.warning("Type a request or pick one of the examples above.")
         return
-
-    catalog_index = {t.id: t for t in get_catalog().all_tracks}
 
     with st.spinner("Planning · retrieving · scoring · checking…"):
         try:
@@ -873,10 +880,6 @@ def main() -> None:
 
     with discover:
         tab_discover(opts)
-        last = st.session_state.get("last_response")
-        if last and not st.session_state.get("_just_ran"):
-            st.markdown('<div class="ts-section-label">Most recent run</div>', unsafe_allow_html=True)
-            st.caption(f"Query: *{st.session_state.get('last_query', '')}*")
 
     with profiles:
         tab_profiles(opts)
