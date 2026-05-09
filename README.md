@@ -1,4 +1,5 @@
 # TuneSage — Agentic Music Recommender with RAG
+recommendation slow
 
 > **Demo video:** _[Loom](https://www.loom.com/share/f08c9934f758439a8a9a1c23d38a19e1)_ · 
 > **Reflections / model card:** [model_card.md](model_card.md)
